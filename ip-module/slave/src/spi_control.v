@@ -9,7 +9,9 @@ module spi_control (
     SCLK,
     MOSI,
     MISO,
-    SS
+    SS,
+
+    data_from_master,
 );
 
 /********************************************************************
@@ -20,11 +22,12 @@ module spi_control (
     input                       SS;
     output                      MISO;
 
+    output reg [7:0] data_from_master;
+
     reg [5:0]                   rx_cnt                  =       0;
     reg [5:0]                   tx_cnt                  =       0;
     reg [`DATA_LENGTH-1:0]      mosi_shift_reg          =       0;
     reg [`DATA_LENGTH-1:0]      miso_shift_reg          =       0;
-
 
 /*********************************************************************
 *receive data 
@@ -45,8 +48,10 @@ if(!(`CLOCK_POLARITY ^ `CLOCK_PHASE))begin
     always@(posedge SCLK )
         if(SS)
             rx_cnt <= 0;
-        else if(rx_cnt == `DATA_LENGTH - 1)
+        else if(rx_cnt == `DATA_LENGTH - 1) begin
+            data_from_master <= mosi_shift_reg;
             rx_cnt <= 0;
+        end
         else 
             rx_cnt <= rx_cnt + 1;
 end

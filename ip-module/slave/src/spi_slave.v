@@ -4,7 +4,9 @@ module spi_slave (
  SCLK,
  MOSI,
  MISO,
- SS
+ SS,
+
+ leds
 );
 
  input SCLK;
@@ -12,11 +14,15 @@ module spi_slave (
  input SS;
  output MISO;
 
+ output [7:0] leds;
+
 spi_control u_spi_control(
  .SCLK(SCLK),
  .MOSI(MOSI),
  .MISO(MISO),
- .SS(SS)
+ .SS(SS),
+ 
+ .data_from_master(leds)
 );     
 
 endmodule
