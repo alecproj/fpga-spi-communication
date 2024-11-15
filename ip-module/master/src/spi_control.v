@@ -16,7 +16,10 @@ module spi_control
      O_RDATA,
 	 err_flag,
 	 r_flag,
-	 wr_index
+	 wr_index,
+
+     data_from_slave,
+     data_to_slave
 );
 
   input                       I_CLK;
@@ -31,6 +34,9 @@ module spi_control
   output                      err_flag;
   output                      r_flag; 
   output reg [3:0]            wr_index;  
+
+  output reg [7:0]  data_from_slave;
+  input [7:0] data_to_slave;
 
 //////////////////////////////////////////////////////////////////////////
 //	Internal Wires/Registers
@@ -196,7 +202,8 @@ begin
 		                        I_TX_EN <= 1'b1;
 		                        I_WADDR <= REG_TXDATA; //0x01
 		                        //I_WDATA <= {24'h0000_00,8'h92};
-		                        I_WDATA <= 8'h55; //wr data
+		                        //I_WDATA <= 8'h55; //wr data
+                                I_WDATA <= data_to_slave;
 		
 		                        wr_reg <=1;
 		                    end
@@ -279,6 +286,7 @@ begin
 			            2:
 			                begin
 				                rd_data <= O_RDATA;
+                                data_from_slave <= O_RDATA;
 								
 					            rd_reg <= 3;
 			                end
@@ -286,26 +294,26 @@ begin
 			                begin
                                 r_flag_reg <= 1;
 								
-							   if(receive_flag == 1'b1)	begin //ignore the first time receiving data
-								if(rd_data != 8'h55) begin
+							  /* if(receive_flag == 1'b1)	begin //ignore the first time receiving data
+                                  if(rd_data != 8'h55) begin
                                    err_flag_reg <= 1'b1;
 								   receive_flag <= 1'b1;								   
 					               rd_reg <= 0;
                                    wr_index <= 6;                                		   
 								end
-								else begin
+								else begin */
                                    err_flag_reg <= 1'b0;
 								   receive_flag <= 1'b1;								   
 					               rd_reg <= 0;   
                                    wr_index <= 6;
-                                end								   
+                               /* end								   
 							   end
                                else begin
                                     err_flag_reg <= 1'b0;	
 									receive_flag <= 1'b1;
 					                rd_reg <= 0;
                                     wr_index <= 6;									
-							   end                 
+							   end  */               
 			                end	
 						default:
 						    begin
