@@ -13,7 +13,9 @@ module spi_master
       MOSI_MASTER,
       MISO_MASTER,  
       error_out,
-      r_data_flag
+      r_data_flag,
+
+      leds
     );
         
     input  clk;
@@ -25,6 +27,8 @@ module spi_master
 	input  MISO_MASTER;
     output error_out;
     output r_data_flag;
+
+    output [7:0] leds;
             
 ////////////////////////////////////////////////////////////////   
 
@@ -50,6 +54,8 @@ module spi_master
  wire                      clk;
 
  wire                      start; 
+
+reg [7:0] data=8'b11100011;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -97,7 +103,10 @@ module spi_master
     .O_RDATA            ( O_RDATA     ),
     .err_flag           ( error_out   ),
     .r_flag             ( r_data_flag ),
-	.wr_index           ( wr_index    )
+	.wr_index           ( wr_index    ),
+
+    .data_from_slave ( leds ),
+    .data_to_slave( data )
  );
 
  SPI_MASTER_Top u_spi_master (
