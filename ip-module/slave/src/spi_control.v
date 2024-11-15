@@ -12,6 +12,7 @@ module spi_control (
     SS,
 
     data_from_master,
+    data_to_master
 );
 
 /********************************************************************
@@ -23,6 +24,7 @@ module spi_control (
     output                      MISO;
 
     output reg [7:0] data_from_master;
+    input [7:0] data_to_master;
 
     reg [5:0]                   rx_cnt                  =       0;
     reg [5:0]                   tx_cnt                  =       0;
@@ -100,7 +102,8 @@ else begin
         if(SS)
             tx_cnt <= 0;
         else if(tx_cnt >= `DATA_LENGTH - 1)begin
-            miso_shift_reg <= mosi_shift_reg;
+            //miso_shift_reg <= mosi_shift_reg;
+            miso_shift_reg <= data_to_master;
             tx_cnt <= 0;
         end
         else 
