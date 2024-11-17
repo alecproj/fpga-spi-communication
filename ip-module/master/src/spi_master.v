@@ -53,7 +53,9 @@ module spi_master
 
  wire                      start; 
 
-reg [7:0] data=8'b11100011;
+wire pre_start;
+
+reg [7:0] data=8'b11111111;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -61,8 +63,8 @@ reg [7:0] data=8'b11100011;
  
  assign rstn2=~rstn1;
  
- assign start=&{delay_key2[5],!delay_key2[4],!delay_key2[3],!delay_key2[2],!delay_key2[1],!delay_key2[0]}; 
- 
+ assign pre_start=&{delay_key2[5],!delay_key2[4],!delay_key2[3],!delay_key2[2],!delay_key2[1],!delay_key2[0]}; 
+
 
  always @(posedge clk) 
     if(counter0==15'd26999) 
@@ -88,6 +90,10 @@ reg [7:0] data=8'b11100011;
        delay_key2[7:1] <= delay_key2[6:0];
        delay_key2[0] <= key2;
     end
+
+always @(posedge pre_start) data <= data - 1'b1;
+
+assign start = pre_start;
 
  spi_control u_spi_control (
     .I_CLK              ( clk  ),

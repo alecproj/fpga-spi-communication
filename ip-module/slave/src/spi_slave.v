@@ -16,7 +16,14 @@ module spi_slave (
 
  output [7:0] leds;
  
- reg [7:0] data = 8'b00110011;
+ reg [7:0] data = 8'b11111111;
+
+ wire receiveing;
+ wire transmitting;
+ reg flag=0;
+   
+always @(negedge transmitting)
+    data <= data - 1'b1;
 
 spi_control u_spi_control(
  .SCLK(SCLK),
@@ -25,7 +32,9 @@ spi_control u_spi_control(
  .SS(SS),
  
  .data_from_master(leds),
- .data_to_master(data)
+ .data_to_master(data),
+ .receiveing(receiveing),
+ .transmitting(transmitting)
 );     
 
 endmodule
