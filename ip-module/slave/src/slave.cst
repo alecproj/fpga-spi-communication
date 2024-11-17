@@ -5,7 +5,7 @@
 //Part Number: GW1NR-LV9QN88PC6/I5
 //Device: GW1NR-9
 //Device Version: C
-//Created Time: Fri 11 15 08:39:20 2024
+//Created Time: Mon 11 18 01:10:45 2024
 
 IO_LOC "leds[5]" 16;
 IO_PORT "leds[5]" IO_TYPE=LVCMOS18 PULL_MODE=UP DRIVE=8 BANK_VCCIO=1.8;
