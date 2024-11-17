@@ -14,8 +14,7 @@ module spi_control
      I_RX_EN,
      I_RADDR,
      O_RDATA,
-	 err_flag,
-	 r_flag,
+	 successfully,
 	 wr_index,
 
      data_from_slave,
@@ -31,8 +30,7 @@ module spi_control
   output                      I_RX_EN;  
   output [2:0]                I_RADDR;
   input  [`IF_DATA_WIDTH-1:0] O_RDATA;
-  output                      err_flag;
-  output                      r_flag; 
+  output                      successfully;
   output reg [3:0]            wr_index;  
 
   output reg [7:0]  data_from_slave;
@@ -40,8 +38,6 @@ module spi_control
 
 //////////////////////////////////////////////////////////////////////////
 //	Internal Wires/Registers
- reg                      r_flag_reg = 0;
- reg                      err_flag_reg = 0;  
  reg                      I_TX_EN;
  reg [2:0]                I_WADDR;
  reg [`IF_DATA_WIDTH-1:0] I_WDATA;
@@ -63,7 +59,7 @@ module spi_control
  
  reg                      start_dl;
  
- reg                      receive_flag;
+ reg                      tr_success;
 ///////////////////////////////////////////////////////////////////////////
 
 always @(negedge I_RESETN or posedge I_CLK)
@@ -87,9 +83,7 @@ begin
 		wr_reg <=0;
 		rd_reg <=0;
 		rd_status <=0;
-        err_flag_reg <= 0;
-        r_flag_reg <= 0;
-		receive_flag <= 1'b0;
+        tr_success <= 0;
 	end
 	else
 	begin
@@ -291,29 +285,9 @@ begin
 					            rd_reg <= 3;
 			                end
 			            3:
-			                begin
-                                r_flag_reg <= 1;
-								
-							  /* if(receive_flag == 1'b1)	begin //ignore the first time receiving data
-                                  if(rd_data != 8'h55) begin
-                                   err_flag_reg <= 1'b1;
-								   receive_flag <= 1'b1;								   
-					               rd_reg <= 0;
-                                   wr_index <= 6;                                		   
-								end
-								else begin */
-                                   err_flag_reg <= 1'b0;
-								   receive_flag <= 1'b1;								   
-					               rd_reg <= 0;   
-                                   wr_index <= 6;
-                               /* end								   
-							   end
-                               else begin
-                                    err_flag_reg <= 1'b0;	
-									receive_flag <= 1'b1;
-					                rd_reg <= 0;
-                                    wr_index <= 6;									
-							   end  */               
+			                begin							   
+					            rd_reg <= 0;   
+                                wr_index <= 6;              
 			                end	
 						default:
 						    begin
@@ -321,9 +295,7 @@ begin
 								I_RADDR <= 0;
 								rd_data <= 0;
 			                    wr_index <= 0;	
-                                rd_reg <= 0;
-                                err_flag_reg <= 1'b0;	
-								receive_flag <= 1'b0;								
+                                rd_reg <= 0;							
                             end							
 			    endcase
 		end	//if(wr_index==5)
@@ -344,12 +316,14 @@ begin
 		                        I_TX_EN <= 1'b0;	
 			                    wr_index <= 0;
 			                    wr_reg <= 0;
+                                tr_success <= 1;
 		                    end
 						default:
 						    begin
 		                        I_TX_EN <= 1'b0;
 			                    wr_index <= 0;	
                                 wr_reg <= 0;
+                                tr_success <= 0;
                             end							
 		        endcase 
 		end//if(wr_index==6)
@@ -357,7 +331,6 @@ begin
 	end 
 end 
 	
- assign err_flag = err_flag_reg;
- assign r_flag  = r_flag_reg;
+assign successfully = tr_success;
 
 endmodule
