@@ -1,8 +1,5 @@
 `timescale 1ns / 1ps
 
-`define     SHIFT_DIRECTION     0   // 0: MSB->LSB , 1: LSB -> MSB
-`define     CLOCK_PHASE         0   
-`define     CLOCK_POLARITY      0
 `define     DATA_LENGTH         8
 
 module spi_control (
@@ -34,86 +31,41 @@ module spi_control (
 /*********************************************************************
 *receive data 
 *********************************************************************/
-if(!(`CLOCK_POLARITY ^ `CLOCK_PHASE))begin
-    always@(posedge SCLK )
-        if(SS)
-            mosi_shift_reg <= 0;
-        else if(!SS && (rx_cnt < `DATA_LENGTH))begin
-            if(`SHIFT_DIRECTION)    //LSB -> MSB
-                mosi_shift_reg <= {MOSI,mosi_shift_reg[`DATA_LENGTH-1:1]};
-            else                    //MSB -> LSB
-                mosi_shift_reg <= {mosi_shift_reg[`DATA_LENGTH-2:0],MOSI};
-        end
-        else
-            mosi_shift_reg <= 0;
 
-    always@(posedge SCLK )
-        if(SS)
-            rx_cnt <= 0;
-        else if(rx_cnt == `DATA_LENGTH - 1) begin
-            data_from_master <= mosi_shift_reg;
-            rx_cnt <= 0;
-        end
-        else 
-            rx_cnt <= rx_cnt + 1;
-end
-else begin
-    always@(negedge SCLK /*or negedge SS*/)
-        if(SS)
-            mosi_shift_reg <= 0;
-        else if(!SS && (rx_cnt < `DATA_LENGTH))begin
-            if(`SHIFT_DIRECTION)        //LSB -> MSB
-                mosi_shift_reg  <=  {MOSI,mosi_shift_reg[`DATA_LENGTH-1:1]};
-            else                        //MSB -> LSB
-                mosi_shift_reg  <=  {mosi_shift_reg[`DATA_LENGTH-2:0],MOSI};
-        end
-        else
-            mosi_shift_reg <= 0;
-     always@(negedge SCLK /*or negedge SS*/)
-        if(SS)
-            rx_cnt <= 0;
-        else if(rx_cnt == `DATA_LENGTH - 1)
-            rx_cnt <= 0;
-        else if(!SS)
-            rx_cnt <= rx_cnt + 1;
-end
+always@(posedge SCLK )
+    if(SS)
+        mosi_shift_reg <= 0;
+    else if(!SS && (rx_cnt < `DATA_LENGTH))
+        mosi_shift_reg <= {mosi_shift_reg[`DATA_LENGTH-2:0],MOSI}; //MSB -> LSB
+    else
+        mosi_shift_reg <= 0;
+
+always@(posedge SCLK )
+    if(SS)
+        rx_cnt <= 0;
+    else if(rx_cnt == `DATA_LENGTH - 1) begin
+        data_from_master <= mosi_shift_reg;
+        rx_cnt <= 0;
+    end
+    else 
+        rx_cnt <= rx_cnt + 1;
 
 /*******************************************************************
 *transmit data 
 *******************************************************************/
-if(`CLOCK_POLARITY ^ `CLOCK_PHASE)begin
-    always@(posedge SCLK )
-        if(SS)
-            tx_cnt <= 0;
-        else if(tx_cnt >= `DATA_LENGTH - 1)begin
-            miso_shift_reg <= mosi_shift_reg;
-            tx_cnt <= 0;
-        end
-        else
-            tx_cnt <= tx_cnt + 1;
 
-    assign MISO = SS      ? 1'bz :
-                  `SHIFT_DIRECTION ? miso_shift_reg[tx_cnt] :                   //LSB ->MSB
-                                     miso_shift_reg[`DATA_LENGTH-tx_cnt-1] ;    //MSB -> LSB
-    
-end
-else begin
-    always@(negedge SCLK )
-        if(SS)
-            tx_cnt <= 0;
-        else if(tx_cnt >= `DATA_LENGTH - 1)begin
-            //miso_shift_reg <= mosi_shift_reg;
-            miso_shift_reg <= data_to_master;
-            tx_cnt <= 0;
-        end
-        else 
-            tx_cnt <= tx_cnt + 1;
+always@(negedge SCLK )
+    if(SS)
+        tx_cnt <= 0;
+    else if(tx_cnt >= `DATA_LENGTH - 1)begin
+        //miso_shift_reg <= mosi_shift_reg;
+        miso_shift_reg <= data_to_master;
+        tx_cnt <= 0;
+    end
+    else 
+        tx_cnt <= tx_cnt + 1;
 
-    assign MISO = SS      ? 1'bz :
-                  `SHIFT_DIRECTION ? miso_shift_reg[tx_cnt] :                   //LSB ->MSB
-                                     miso_shift_reg[`DATA_LENGTH-tx_cnt-1] ;    //MSB -> LSB
- 
-end
+assign MISO = SS ? 1'bz : miso_shift_reg[`DATA_LENGTH-tx_cnt-1] ;    //MSB -> LSB
 
 
 endmodule
