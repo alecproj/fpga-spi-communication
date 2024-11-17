@@ -12,8 +12,7 @@ module spi_master
       SS_N_MASTER,
       MOSI_MASTER,
       MISO_MASTER,  
-      error_out,
-      r_data_flag,
+      success,
 
       leds
     );
@@ -25,8 +24,7 @@ module spi_master
 	output SS_N_MASTER;
 	output MOSI_MASTER;
 	input  MISO_MASTER;
-    output error_out;
-    output r_data_flag;
+    output success;
 
     output [7:0] leds;
             
@@ -89,7 +87,7 @@ reg [7:0] data=8'b11100011;
 	begin
        delay_key2[7:1] <= delay_key2[6:0];
        delay_key2[0] <= key2;
-    end	
+    end
 
  spi_control u_spi_control (
     .I_CLK              ( clk  ),
@@ -101,8 +99,7 @@ reg [7:0] data=8'b11100011;
     .I_RX_EN            ( I_RX_EN     ),
     .I_RADDR            ( I_RADDR     ),
     .O_RDATA            ( O_RDATA     ),
-    .err_flag           ( error_out   ),
-    .r_flag             ( r_data_flag ),
+    .successfully       ( success     ),
 	.wr_index           ( wr_index    ),
 
     .data_from_slave ( leds ),
