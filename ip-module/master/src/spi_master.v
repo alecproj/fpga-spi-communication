@@ -14,7 +14,9 @@ module spi_master
       MISO_MASTER,  
       success,
 
-      leds
+      leds,
+      debug,
+      test
     );
         
     input  clk;
@@ -27,6 +29,8 @@ module spi_master
     output success;
 
     output [7:0] leds;
+    output reg debug;
+    output test;
             
 ////////////////////////////////////////////////////////////////   
 
@@ -91,7 +95,10 @@ reg [7:0] data=8'b11111111;
        delay_key2[0] <= key2;
     end
 
-always @(posedge pre_start) data <= data - 1'b1;
+always @(posedge pre_start) begin 
+    debug <= ~debug;
+    data <= data - 1'b1;
+end
 
 assign start = pre_start;
 
@@ -109,7 +116,8 @@ assign start = pre_start;
 	.wr_index           ( wr_index    ),
 
     .data_from_slave ( leds ),
-    .data_to_slave( data )
+    .data_to_slave( data ),
+    .dbg(test)
  );
 
  SPI_MASTER_Top u_spi_master (

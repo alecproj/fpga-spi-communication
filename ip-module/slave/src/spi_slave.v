@@ -6,7 +6,9 @@ module spi_slave (
  MISO,
  SS,
 
- leds
+ leds,
+ debug,
+ test
 );
 
  input SCLK;
@@ -15,6 +17,8 @@ module spi_slave (
  output MISO;
 
  output [7:0] leds;
+ output reg debug;
+ output test;
  
  reg [7:0] data = 8'b11111111;
 
@@ -22,8 +26,10 @@ module spi_slave (
  wire transmitting;
  reg flag=0;
    
-always @(negedge transmitting)
+always @(posedge transmitting) begin
     data <= data - 1'b1;
+    debug <= ~debug;
+end
 
 spi_control u_spi_control(
  .SCLK(SCLK),
@@ -34,7 +40,8 @@ spi_control u_spi_control(
  .data_from_master(leds),
  .data_to_master(data),
  .receiveing(receiveing),
- .transmitting(transmitting)
+ .transmitting(transmitting),
+ .dbg(test)
 );     
 
 endmodule
