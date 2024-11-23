@@ -18,7 +18,8 @@ module spi_control
 	 wr_index,
 
      data_from_slave,
-     data_to_slave
+     data_to_slave,
+     dbg
 );
 
   input                       I_CLK;
@@ -33,8 +34,9 @@ module spi_control
   output                      successfully;
   output reg [3:0]            wr_index;  
 
-  output reg [7:0]  data_from_slave;
+  output [7:0]  data_from_slave;
   input [7:0] data_to_slave;
+  output reg dbg;
 
 //////////////////////////////////////////////////////////////////////////
 //	Internal Wires/Registers
@@ -60,6 +62,7 @@ module spi_control
  reg                      start_dl;
  
  reg                      tr_success;
+ reg [7:0] datareg;
 ///////////////////////////////////////////////////////////////////////////
 
 always @(negedge I_RESETN or posedge I_CLK)
@@ -279,13 +282,14 @@ begin
 			                end
 			            2:
 			                begin
-				                rd_data <= O_RDATA;
-                                data_from_slave <= O_RDATA;
+				                rd_data <= datareg;
+                                datareg <= O_RDATA;
 								
 					            rd_reg <= 3;
 			                end
 			            3:
-			                begin							   
+			                begin	
+                                dbg <= ~dbg;
 					            rd_reg <= 0;   
                                 wr_index <= 6;              
 			                end	
@@ -332,5 +336,6 @@ begin
 end 
 	
 assign successfully = tr_success;
+assign data_from_slave = datareg;
 
 endmodule
