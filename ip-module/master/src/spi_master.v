@@ -29,7 +29,7 @@ module spi_master
     output success;
 
     output [7:0] leds;
-    output reg debug;
+    output debug;
     output test;
             
 ////////////////////////////////////////////////////////////////   
@@ -53,7 +53,7 @@ module spi_master
  reg  [7:0]                delay_key2=0; 
  reg  [14:0]               counter0=0;
  reg                       clk_en=0; 
- wire                      clk;
+
 
  wire                      start; 
 
@@ -69,6 +69,7 @@ reg [7:0] data=8'b11111111;
  
  assign pre_start=&{delay_key2[5],!delay_key2[4],!delay_key2[3],!delay_key2[2],!delay_key2[1],!delay_key2[0]}; 
 
+assign debug = rstn2;
 
  always @(posedge clk) 
     if(counter0==15'd26999) 
@@ -95,15 +96,15 @@ reg [7:0] data=8'b11111111;
        delay_key2[0] <= key2;
     end
 
-always @(posedge pre_start) begin 
-    debug <= ~debug;
+always @(posedge success) begin 
+    //debug <= ~debug;
     data <= data - 1'b1;
 end
 
 assign start = pre_start;
 
  spi_control u_spi_control (
-    .I_CLK              ( clk  ),
+    .I_CLK              ( clk ),
     .I_RESETN           ( rstn2       ),
     .start              ( start       ),
     .I_TX_EN            ( I_TX_EN     ),
