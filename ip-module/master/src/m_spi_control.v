@@ -87,6 +87,7 @@ begin
 		rd_reg <=0;
 		rd_status <=0;
         tr_success <= 0;
+        //dbg <= ~dbg;
 	end
 	else
 	begin
@@ -100,6 +101,7 @@ begin
 		                        I_WDATA <= 8'h01;	 //Slave Select
 		
 		                        wr_cntl <=1;
+                                tr_success <= 0;
 		                    end
 						   else
 						    begin
@@ -247,7 +249,8 @@ begin
                             begin						
 							   if(rd_status[6] == 1'b1) begin
 					              rd_reg <= 0;
-                                  wr_index <= 5; 
+                                  wr_index <= 5;
+                               // if(rd_status[7] == 1'b1) dbg <= ~dbg;
                                end
                                else begin
 					              rd_reg <= 0;
@@ -289,7 +292,6 @@ begin
 			                end
 			            3:
 			                begin	
-                                dbg <= ~dbg;
 					            rd_reg <= 0;   
                                 wr_index <= 6;              
 			                end	
