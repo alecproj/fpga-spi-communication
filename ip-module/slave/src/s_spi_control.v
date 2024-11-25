@@ -2,7 +2,7 @@
 
 `define     DATA_LENGTH         8
 
-module spi_control (
+module s_spi_control (
     SCLK,
     MOSI,
     MISO,
@@ -34,13 +34,13 @@ module spi_control (
     reg [`DATA_LENGTH-1:0]      mosi_shift_reg          =       0;
     reg [`DATA_LENGTH-1:0]      miso_shift_reg          =       0;
 
-    reg transmitting_f=0;
+    reg transmitting_f=1;
     reg receiveing_f=0;
     reg [7:0] datareg;
     reg [7:0] rddata;
 
 initial begin
-    miso_shift_reg <= data_to_master;
+    miso_shift_reg = data_to_master;
     //dbg <= 0;
 end
 
@@ -58,20 +58,29 @@ always@(posedge SCLK )
     else
         mosi_shift_reg <= 0;
 
-always@(posedge SCLK )
+always@(posedge SCLK or posedge SS)
     if(SS) begin
         rx_cnt <= 0;
+        receiveing_f <= 0;
     end
     else if(rx_cnt == `DATA_LENGTH - 1) begin
-        receiveing_f <= 0;
+        //receiveing_f <= 0;
         dbg <= ~dbg;
-        rddata <= datareg;
-        datareg <= mosi_shift_reg;
+        //rddata <= datareg;
+        //datareg <= mosi_shift_reg;
         rx_cnt <= 0;
     end
     else begin
         receiveing_f <= 1;
         rx_cnt <= rx_cnt + 1;
+    end
+
+always@(posedge SS)
+    begin
+        datareg <= mosi_shift_reg;
+        //receiveing_f <= 0;
+        //transmitting_f <= 0;
+        miso_shift_reg <= data_to_master;
     end
 
 assign receiveing = receiveing_f;
@@ -87,11 +96,11 @@ always@(negedge SCLK )
         // transmitting_f <= 0;
         tx_cnt <= 0;
     end // передача начинается, когда tx_cnt = 0. Обновить данные нужно еще до этого момента.
-    else if(tx_cnt == `DATA_LENGTH - 1) // а заканчивается в этот момент
+    else if(tx_cnt >= `DATA_LENGTH - 1) // а заканчивается в этот момент
     begin
         //miso_shift_reg <= mosi_shift_reg;
         transmitting_f <= 0;
-        miso_shift_reg <= data_to_master;
+        //miso_shift_reg <= data_to_master;
         tx_cnt <= 0;
     end
     else begin
