@@ -3,7 +3,7 @@
 
 `define IF_DATA_WIDTH 8
    
-module spi_control
+module m_spi_control
 (
 	 I_CLK,
      I_RESETN,
@@ -34,7 +34,7 @@ module spi_control
   output                      successfully;
   output reg [3:0]            wr_index;  
 
-  output [7:0]  data_from_slave;
+  output reg [7:0]  data_from_slave;
   input [7:0] data_to_slave;
   output reg dbg;
 
@@ -285,8 +285,8 @@ begin
 			                end
 			            2:
 			                begin
-				                rd_data <= datareg;
-                                datareg <= O_RDATA;
+				                //rd_data <= datareg;
+                                data_from_slave <= O_RDATA;
 								
 					            rd_reg <= 3;
 			                end
@@ -338,6 +338,6 @@ begin
 end 
 	
 assign successfully = tr_success;
-assign data_from_slave = datareg;
+//assign data_from_slave = datareg;
 
 endmodule

@@ -103,7 +103,7 @@ end
 
 assign start = pre_start;
 
- spi_control u_spi_control (
+ m_spi_control u_spi_control (
     .I_CLK              ( clk ),
     .I_RESETN           ( rstn2       ),
     .start              ( start       ),

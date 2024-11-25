@@ -7,6 +7,7 @@ module spi_slave (
  MISO,
  SS,
 
+ leds,
  cols,
  rows,
 
@@ -19,14 +20,15 @@ module spi_slave (
  input MOSI;
  input SS;
  output MISO;
-
+ 
+ output reg [7:0] leds;
  output reg [3:0] cols;
  output reg [2:0] rows;
 
  output reg debug;
  output test;
  
- reg [7:0] o_data = 8'b11111111;
+ reg [7:0] o_data;
  
  reg [17:0] cooldown=0;
  reg [3:0] history [0:2];
@@ -39,17 +41,19 @@ module spi_slave (
  reg flag=1;
 
 initial begin
-    history[0] <= 4'b0;
-    history[1] <= 4'b0;
-    history[2] <= 4'b0;
-    cols <= 0;
-    rows <= 3'b111;
+    history[0] = 4'b0;
+    history[1] = 4'b0;
+    history[2] = 4'b0;
+    cols = 0;
+    rows = 3'b111;
+    o_data = 8'b11111111;
 end
 
 always @(negedge receiveing) begin
           history[0] <= history[1];
           history[1] <= history[2];
-          history[2] <= i_data;
+          history[2] <= ~i_data;
+          leds <= i_data;
 end
 
 
@@ -67,12 +71,12 @@ always @(posedge clk)
    
     
    
-always @(posedge transmitting) begin
+always @(negedge transmitting) begin
     o_data <= o_data - 1'b1;
     debug <= ~debug;
 end
 
-spi_control u_spi_control(
+s_spi_control u_spi_control(
  .SCLK(SCLK),
  .MOSI(MOSI),
  .MISO(MISO),
