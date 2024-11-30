@@ -1,7 +1,7 @@
   
 `timescale 1ns/1ps
 
-`define IF_DATA_WIDTH 8
+`define DATA_WIDTH 8
    
 module m_spi_control
 (
@@ -14,12 +14,11 @@ module m_spi_control
      I_RX_EN,
      I_RADDR,
      O_RDATA,
-	 successfully,
 	 wr_index,
 
-     data_from_slave,
-     data_to_slave,
-     dbg
+     i_data,
+     o_data,
+     is_sending
 );
 
   input                       I_CLK;
@@ -27,22 +26,22 @@ module m_spi_control
   input                       start;  
   output                      I_TX_EN;
   output [2:0]                I_WADDR;
-  output [`IF_DATA_WIDTH-1:0] I_WDATA;   
+  output [`DATA_WIDTH-1:0]    I_WDATA;   
   output                      I_RX_EN;  
   output [2:0]                I_RADDR;
-  input  [`IF_DATA_WIDTH-1:0] O_RDATA;
-  output                      successfully;
+  input  [`DATA_WIDTH-1:0]    O_RDATA;
   output reg [3:0]            wr_index;  
 
-  output reg [7:0]  data_from_slave;
-  input [7:0] data_to_slave;
-  output reg dbg;
+  output reg [7:0]            i_data;
+  input [7:0]                 o_data;
+  output reg                  is_sending;
 
 //////////////////////////////////////////////////////////////////////////
-//	Internal Wires/Registers
+// Internal Wires/Registers
+
  reg                      I_TX_EN;
  reg [2:0]                I_WADDR;
- reg [`IF_DATA_WIDTH-1:0] I_WDATA;
+ reg [`DATA_WIDTH-1:0]    I_WDATA;
  reg                      I_RX_EN; 
  reg [2:0]                I_RADDR;
 
@@ -54,16 +53,13 @@ module m_spi_control
 
  reg [0:0]				  wr_cntl;
  reg [0:0]				  wr_reg;
-// reg [3:0]				  wr_index;
  reg [1:0]				  rd_reg;
- reg [`IF_DATA_WIDTH-1:0] rd_status;
- reg [`IF_DATA_WIDTH-1:0] rd_data;
+ reg [`DATA_WIDTH-1:0]    rd_status;
  
  reg                      start_dl;
- 
- reg                      tr_success;
- reg [7:0] datareg;
+
 ///////////////////////////////////////////////////////////////////////////
+// Module management
 
 always @(negedge I_RESETN or posedge I_CLK)
     if(~I_RESETN)
@@ -77,17 +73,17 @@ begin
 	begin
 	    I_TX_EN <= 1'b0;
 		I_WADDR <= 2'b00;
-		I_WDATA <= {`IF_DATA_WIDTH{1'b0}};
+		I_WDATA <= {`DATA_WIDTH{1'b0}};
 	    I_RX_EN <= 1'b0;		
 		I_RADDR <= 2'b00;
 		
 		wr_index <= 0;
 		wr_cntl <= 0;
-		wr_reg <=0;
-		rd_reg <=0;
-		rd_status <=0;
-        tr_success <= 0;
-        //dbg <= ~dbg;
+		wr_reg <= 0;
+		rd_reg <= 0;
+		rd_status <= 0;
+        i_data <= 0;
+        is_sending <= 0;
 	end
 	else
 	begin
@@ -101,23 +97,26 @@ begin
 		                        I_WDATA <= 8'h01;	 //Slave Select
 		
 		                        wr_cntl <=1;
-                                tr_success <= 0;
+                                is_sending <= 0;
 		                    end
 						   else
 						    begin
 		                        I_TX_EN <= 1'b0;
+
 			                    wr_index <= 0;	
                                 wr_cntl <= 0;
                             end								
 		                1:
 		                    begin 
 		                        I_TX_EN <= 1'b0;
+
 			                    wr_index <= 1;	
                                 wr_cntl <= 0;								
 		                    end
 						default:
 						    begin
 		                        I_TX_EN <= 1'b0;
+
 			                    wr_index <= 0;	
                                 wr_cntl <= 0;
                             end						
@@ -130,7 +129,6 @@ begin
 		                    begin
 		                        I_TX_EN <= 1'b1;
 		                        I_WADDR <= REG_CONTROL; //0x03
-		                        //I_WDATA <= {24'h0000_00,8'h92};	
 		                        I_WDATA <= 8'h8B; //10001011
 		
 		                        wr_reg <=1;
@@ -147,6 +145,7 @@ begin
 		                        I_TX_EN <= 1'b0;
 								I_WADDR <= 0;
 								I_WDATA <= 0;
+
 			                    wr_index <= 0;	
                                 wr_reg <= 0;
                             end								
@@ -187,6 +186,7 @@ begin
 						    begin
 		                        I_RX_EN <= 1'b0;
 								I_RADDR <= 0;
+
 								rd_status <= 0;
 			                    wr_index <= 0;	
                                 rd_reg <= 0;
@@ -200,16 +200,14 @@ begin
 		                    begin
 		                        I_TX_EN <= 1'b1;
 		                        I_WADDR <= REG_TXDATA; //0x01
-		                        //I_WDATA <= {24'h0000_00,8'h92};
-		                        //I_WDATA <= 8'h55; //wr data
-                                I_WDATA <= data_to_slave;
+                                I_WDATA <= o_data;
 		
 		                        wr_reg <=1;
 		                    end
 		                1:
 		                    begin 
 		                        I_TX_EN <= 1'b0;
-								
+
 			                    wr_index <= 4;
 			                    wr_reg <= 0;								
 		                    end
@@ -218,6 +216,7 @@ begin
 		                        I_TX_EN <= 1'b0;
 								I_WADDR <= 0;
 								I_WDATA <= 0;
+
 			                    wr_index <= 0;	
                                 wr_reg <= 0;
                             end							
@@ -250,7 +249,6 @@ begin
 							   if(rd_status[6] == 1'b1) begin
 					              rd_reg <= 0;
                                   wr_index <= 5;
-                               // if(rd_status[7] == 1'b1) dbg <= ~dbg;
                                end
                                else begin
 					              rd_reg <= 0;
@@ -261,6 +259,7 @@ begin
 						    begin
 		                        I_RX_EN <= 1'b0;
 								I_RADDR <= 0;
+
 								rd_status <= 0;
 			                    wr_index <= 0;	
                                 rd_reg <= 0;
@@ -285,8 +284,7 @@ begin
 			                end
 			            2:
 			                begin
-				                //rd_data <= datareg;
-                                data_from_slave <= O_RDATA;
+                                i_data <= O_RDATA;
 								
 					            rd_reg <= 3;
 			                end
@@ -299,7 +297,7 @@ begin
 						    begin
 		                        I_RX_EN <= 1'b0;
 								I_RADDR <= 0;
-								rd_data <= 0;
+
 			                    wr_index <= 0;	
                                 rd_reg <= 0;							
                             end							
@@ -312,7 +310,6 @@ begin
 		                    begin
 		                        I_TX_EN <= 1'b1;
 		                        I_WADDR <= REG_CONTROL;
-		                        //I_WDATA <= {24'h0000_00,8'h92};
 		                        I_WDATA <= 8'h00;
 		
 		                        wr_reg <=1;
@@ -320,24 +317,22 @@ begin
 		                1:
 		                    begin						
 		                        I_TX_EN <= 1'b0;	
+
 			                    wr_index <= 0;
 			                    wr_reg <= 0;
-                                tr_success <= 1;
+                                is_sending <= 1;
 		                    end
 						default:
 						    begin
 		                        I_TX_EN <= 1'b0;
+
 			                    wr_index <= 0;	
                                 wr_reg <= 0;
-                                tr_success <= 0;
+                                is_sending <= 0;
                             end							
 		        endcase 
 		end//if(wr_index==6)
-    	
 	end 
 end 
-	
-assign successfully = tr_success;
-//assign data_from_slave = datareg;
 
 endmodule

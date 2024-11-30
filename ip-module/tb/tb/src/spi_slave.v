@@ -2,91 +2,88 @@
 
 module spi_slave (
  clk,
+ btn_reset,
  SCLK,
  MOSI,
  MISO,
  SS,
-
- leds,
- cols,
- rows,
-
- debug,
- test
+ is_receiveing,
+ is_transmitting,
+ leds
 );
 
  input clk;
+ input btn_reset;
  input SCLK;
  input MOSI;
  input SS;
  output MISO;
- 
+ output is_receiveing;
+ output is_transmitting; 
  output reg [7:0] leds;
- output reg [3:0] cols;
- output reg [2:0] rows;
-
- output reg debug;
- output test;
  
- reg [7:0] o_data;
- 
- reg [17:0] cooldown=0;
- reg [3:0] history [0:2];
- reg [1:0] cur_index = 0;
+///////////////////////////////////////////////////////////////////////////
+// Internal Wires/Registers
 
+ wire                      reset_on_1;
+ wire                      reset_on_0;
+ reg  [7:0]                delay_btn_reset=0;
+ reg  [14:0]               counter0=0;
+ reg                       clk_en=0; 
+
+ reg [7:0] o_data = 8'b11111111;
  wire [7:0] i_data;
 
- wire receiveing;
- wire transmitting;
- reg flag=1;
+//////////////////////////////////////////////////////////////////////////
+// Button debounce processing
 
-initial begin
-    history[0] = 4'b0;
-    history[1] = 4'b0;
-    history[2] = 4'b0;
-    cols = 0;
-    rows = 3'b111;
-    o_data = 8'b11111111;
-end
+ assign reset_on_1=&{delay_btn_reset[5],!delay_btn_reset[4],!delay_btn_reset[3],!delay_btn_reset[2],!delay_btn_reset[1],!delay_btn_reset[0]};
+ assign reset_on_0=~reset_on_1;
 
-always @(negedge receiveing) begin
-          history[0] <= history[1];
-          history[1] <= history[2];
-          history[2] <= i_data;
-          leds <= i_data;
-end
-
-
-
-always @(posedge clk)
-    if (cooldown == 0) begin
-        cooldown <= 150000;
-        rows <= ~(3'b001 << cur_index);
-        cols <= history[cur_index];
-        if (cur_index == 2)
-            cur_index <= 0;
-        else cur_index <= cur_index + 1;
-    end
-    else cooldown <= cooldown - 1;
-   
+ always @(posedge clk) 
+    if(counter0==15'd26999) 
+	begin
+	   counter0 <= 15'd0;
+	   clk_en <= 1'b1;
+	end
+	else begin
+	   counter0 <= counter0 + 15'd1;
+	   clk_en <= 1'b0;	 
+	end
     
+ always @(posedge clk)
+    if(clk_en==1'b1) 
+	begin
+       delay_btn_reset[7:1] <= delay_btn_reset[6:0];
+       delay_btn_reset[0] <= btn_reset;
+    end
+
+//////////////////////////////////////////////////////////////////////////
+// Data management
+
+always @(posedge reset_on_1) begin
+    o_data <= 8'b11111111;
+end    
+
+always @(negedge is_receiveing)
+    leds <= i_data;
    
-always @(negedge transmitting) begin
+always @(negedge is_transmitting)
     o_data <= o_data - 1'b1;
-    debug <= ~debug;
-end
+
+//////////////////////////////////////////////////////////////////////////
 
 s_spi_control u_spi_control(
  .SCLK(SCLK),
  .MOSI(MOSI),
  .MISO(MISO),
  .SS(SS),
+ .reset(reset_on_0),
  
- .data_from_master(i_data),
- .data_to_master(o_data),
- .receiveing(receiveing),
- .transmitting(transmitting),
- .dbg(test)
-);     
+ .i_data(i_data),
+ .o_data(o_data),
+ .is_receiveing(is_receiveing),
+ .is_transmitting(is_transmitting)
+);  
 
 endmodule
