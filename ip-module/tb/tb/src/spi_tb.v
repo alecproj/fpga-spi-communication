@@ -4,55 +4,47 @@
 module tb;
 
 reg clk;
-reg rst;
-reg key2;
+reg m_btn_reset;
+reg s_btn_reset;
+reg btn_send;
 
 wire SCLK_MASTER;
 wire SS_N_MASTER;
 wire MOSI_MASTER;
 wire MISO_MASTER;
-wire success;
+wire is_sending;
 wire [7:0] m_leds;
-wire m_debug;
-wire m_test;
 
 wire [7:0] s_leds;
-wire [3:0] cols;
-wire [2:0] rows;
-wire s_debug;
-wire s_test;
+wire is_receiveing;
+wire is_transmitting;
 
 GSR GSR(.GSRI(1'b1));
 
 spi_master u_spi_master 
 	(
       .clk(clk),
-      .rst_n(rst),
-      .key2(key2),
+      .btn_reset(m_btn_reset),
+      .btn_send(btn_send),
       .SCLK_MASTER(SCLK_MASTER),
       .SS_N_MASTER(SS_N_MASTER),
       .MOSI_MASTER(MOSI_MASTER),
       .MISO_MASTER(MISO_MASTER),  
-      .success(success),
-
       .leds(m_leds),
-      .debug(m_debug),
-      .test(m_test)
+      .is_sending(is_sending)
     );
 
 spi_slave u_spi_slave(
  .clk(clk),
+ .btn_reset(s_btn_reset),
  .SCLK(SCLK_MASTER),
  .MOSI(MOSI_MASTER),
  .MISO(MISO_MASTER),
  .SS(SS_N_MASTER),
+ .is_receiveing(is_receiveing),
+ .is_transmitting(is_transmitting),
 
- .leds(s_leds),
- .cols(cols),
- .rows(rows),
-
- .debug(s_debug),
- .test(s_test)
+ .leds(s_leds)
 );
 
     initial begin
@@ -61,36 +53,39 @@ spi_slave u_spi_slave(
     end
 
     initial begin
-        rst=1;
-        key2=1;		
+        m_btn_reset=1;
+        s_btn_reset=1;
+        btn_send=1;		
         #2000000;
-        rst=0;
+        m_btn_reset=0;
+        s_btn_reset=0;
         #6000000;
-        rst=1;
+        m_btn_reset=1;
+        s_btn_reset=1;
         #2000000;
-        key2=0;
+        btn_send=0;
         #6000000;
-        key2=1;
+        btn_send=1;
         #2000000;
-        key2=0;
+        btn_send=0;
         #6000000;
-        key2=1;
+        btn_send=1;
         #2000000;
-        key2=0;
+        btn_send=0;
         #6000000;
-        key2=1;
+        btn_send=1;
         #2000000;
-        key2=0;
+        btn_send=0;
         #6000000;
-        key2=1;
+        btn_send=1;
         #2000000;
-        key2=0;
+        btn_send=0;
         #6000000;
-        key2=1;
+        btn_send=1;
         #2000000;
-		key2=0;
+		btn_send=0;
         #6000000;
-        key2=1;
+        btn_send=1;
         #2000000;
 
         $finish;		

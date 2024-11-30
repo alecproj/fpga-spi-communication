@@ -1,75 +1,67 @@
   
 `timescale 1ns/1ps
 
-`define IF_DATA_WIDTH 8
+`define DATA_WIDTH 8
    
 module spi_master  
 	(
       clk,
-      rst_n,
-	  key2,
+      btn_reset,
+	  btn_send,
       SCLK_MASTER,
       SS_N_MASTER,
       MOSI_MASTER,
-      MISO_MASTER,  
-      success,
-
+      MISO_MASTER,
       leds,
-      debug,
-      test
+      is_sending
     );
         
     input  clk;
-    input  rst_n;
-	input  key2;
+    input  btn_reset;
+	input  btn_send;
 	output SCLK_MASTER;
 	output SS_N_MASTER;
 	output MOSI_MASTER;
 	input  MISO_MASTER;
-    output success;
-
     output [7:0] leds;
-    output debug;
-    output test;
+    output is_sending;
             
 ////////////////////////////////////////////////////////////////   
+// Internal Wires/Registers
 
  wire                      I_RESETN;
  wire                      I_TX_EN;
  wire [2:0]                I_WADDR;
- wire [`IF_DATA_WIDTH-1:0] I_WDATA;
+ wire [`DATA_WIDTH-1:0]    I_WDATA;
  wire                      I_RX_EN;
  wire [2:0]                I_RADDR;
- wire [`IF_DATA_WIDTH-1:0] O_RDATA;
+ wire [`DATA_WIDTH-1:0]    O_RDATA;
  
  wire                      MOSI_SLAVE;
  wire                      MISO_SLAVE;
  wire                      SS_N_SLAVE;
  wire                      SCLK_SLAVE;
  
- wire                      rstn1;
- wire                      rstn2;
- reg  [7:0]                delay_rst=0;
- reg  [7:0]                delay_key2=0; 
+ wire                      reset_on_1;
+ wire                      reset_on_0;
+ reg  [7:0]                delay_btn_reset=0;
+ reg  [7:0]                delay_btn_send=0; 
  reg  [14:0]               counter0=0;
  reg                       clk_en=0; 
 
 
  wire                      start; 
 
-wire pre_start;
-
-reg [7:0] data=8'b11111111;
+ reg [7:0]                 o_data=8'b11111111;
 
 //////////////////////////////////////////////////////////////////////////
+// Button debounce processing
 
- assign rstn1=&{delay_rst[5],!delay_rst[4],!delay_rst[3],!delay_rst[2],!delay_rst[1],!delay_rst[0]};
+ assign reset_on_1=&{delay_btn_reset[5],!delay_btn_reset[4],!delay_btn_reset[3],!delay_btn_reset[2],!delay_btn_reset[1],!delay_btn_reset[0]};
  
- assign rstn2=~rstn1;
+ assign reset_on_0=~reset_on_1;
  
- assign pre_start=&{delay_key2[5],!delay_key2[4],!delay_key2[3],!delay_key2[2],!delay_key2[1],!delay_key2[0]}; 
-
-assign debug = rstn2;
+ assign start=&{delay_btn_send[5],!delay_btn_send[4],!delay_btn_send[3],!delay_btn_send[2],!delay_btn_send[1],!delay_btn_send[0]}; 
 
  always @(posedge clk) 
     if(counter0==15'd26999) 
@@ -85,27 +77,31 @@ assign debug = rstn2;
  always @(posedge clk)
     if(clk_en==1'b1) 
 	begin
-       delay_rst[7:1] <= delay_rst[6:0];
-       delay_rst[0] <= rst_n;
+       delay_btn_reset[7:1] <= delay_btn_reset[6:0];
+       delay_btn_reset[0] <= btn_reset;
     end
 	
  always @(posedge clk)
     if(clk_en==1'b1) 
 	begin
-       delay_key2[7:1] <= delay_key2[6:0];
-       delay_key2[0] <= key2;
+       delay_btn_send[7:1] <= delay_btn_send[6:0];
+       delay_btn_send[0] <= btn_send;
     end
 
-always @(posedge success) begin 
-    //debug <= ~debug;
-    data <= data - 1'b1;
-end
+//////////////////////////////////////////////////////////////////////////
+// Data management
 
-assign start = pre_start;
+always @(posedge clk)
+    if(reset_on_1) o_data <= 8'b11111111;      
+
+always @(posedge is_sending)
+    o_data <= o_data - 1'b1;
+
+///////////////////////////////////////////////////////////////////////////
 
  m_spi_control u_spi_control (
-    .I_CLK              ( clk ),
-    .I_RESETN           ( rstn2       ),
+    .I_CLK              ( clk         ),
+    .I_RESETN           ( reset_on_0  ),
     .start              ( start       ),
     .I_TX_EN            ( I_TX_EN     ),
     .I_WADDR            ( I_WADDR     ),
@@ -113,17 +109,16 @@ assign start = pre_start;
     .I_RX_EN            ( I_RX_EN     ),
     .I_RADDR            ( I_RADDR     ),
     .O_RDATA            ( O_RDATA     ),
-    .successfully       ( success     ),
 	.wr_index           ( wr_index    ),
 
-    .data_from_slave ( leds ),
-    .data_to_slave( data ),
-    .dbg(test)
+    .i_data             ( leds        ),
+    .o_data             ( o_data      ),
+    .is_sending         ( is_sending  )
  );
 
  SPI_MASTER_Top u_spi_master (
-    .I_CLK              ( clk  ),
-    .I_RESETN           ( rstn2       ),
+    .I_CLK              ( clk         ),
+    .I_RESETN           ( reset_on_0  ),
     .I_TX_EN            ( I_TX_EN     ),
     .I_WADDR            ( I_WADDR     ),
     .I_WDATA            ( I_WDATA     ),
