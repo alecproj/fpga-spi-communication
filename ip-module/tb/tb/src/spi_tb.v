@@ -87,6 +87,18 @@ spi_slave u_spi_slave(
         #6000000;
         btn_send=1;
         #2000000;
+        
+        #2000000;
+        m_btn_reset=0;
+        s_btn_reset=0;
+        #6000000;
+        m_btn_reset=1;
+        s_btn_reset=1;
+        #2000000;
+        btn_send=0;
+        #6000000;
+        btn_send=1;
+        #2000000;
 
         $finish;		
     end

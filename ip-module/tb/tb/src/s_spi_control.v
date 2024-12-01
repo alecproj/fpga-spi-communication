@@ -7,7 +7,6 @@ module s_spi_control (
     MOSI,
     MISO,
     SS,
-    reset,
 
     i_data,
     o_data,
@@ -19,7 +18,6 @@ module s_spi_control (
     input                       MOSI;
     input                       SS;
     output                      MISO;
-    input                       reset;
 
     output reg [7:0]            i_data;
     input [7:0]                 o_data;
@@ -34,24 +32,12 @@ module s_spi_control (
     reg [`DATA_LENGTH-1:0]      mosi_shift_reg          =       0;
     reg [`DATA_LENGTH-1:0]      miso_shift_reg          =       0;
 
-///////////////////////////////////////////////////////////////////////////
-// Reset
-
-always @(negedge reset)
-    begin
-       mosi_shift_reg <= 0;
-       miso_shift_reg <= o_data;
-       i_data <= 0;
-       rx_cnt <= 0;
-       tx_cnt <= 0;
-       is_receiveing <= 1;
-       is_transmitting <= 1;    
-    end
+initial miso_shift_reg <= o_data;
 
 ///////////////////////////////////////////////////////////////////////////
 // Receive data 
 
-always@(posedge SCLK )
+always@(posedge SCLK)
     if(SS)
         mosi_shift_reg <= 0;
     else if(!SS && (rx_cnt < `DATA_LENGTH))
@@ -83,7 +69,7 @@ always@(posedge SS)
 ///////////////////////////////////////////////////////////////////////////
 // Transmit data 
 
-always@(negedge SCLK )
+always@(negedge SCLK)
     if(SS) 
     begin
         tx_cnt <= 0;

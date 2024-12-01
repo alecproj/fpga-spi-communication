@@ -49,7 +49,7 @@ module spi_master
  reg  [14:0]               counter0=0;
  reg                       clk_en=0; 
 
-
+ reg change_rd=1;
  wire                      start; 
 
  reg [7:0]                 o_data=8'b11111111;
@@ -92,10 +92,18 @@ module spi_master
 // Data management
 
 always @(posedge clk)
-    if(reset_on_1) o_data <= 8'b11111111;      
-
-always @(posedge is_sending)
-    o_data <= o_data - 1'b1;
+    if(reset_on_1) 
+    begin
+        o_data <= 8'b11111111;  
+        change_rd <= 1;
+    end
+    else if (is_sending && change_rd)
+    begin
+        o_data <= o_data - 1'b1;
+        change_rd <= 0;
+    end
+    else if (!is_sending)
+        change_rd <= 1;
 
 ///////////////////////////////////////////////////////////////////////////
 
