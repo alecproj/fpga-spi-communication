@@ -8,47 +8,36 @@ module s_spi_control (
     MISO,
     SS,
 
-    data_from_master,
-    data_to_master,
-    receiveing,
-    transmitting,
-    dbg
+    i_data,
+    o_data,
+    is_receiveing,
+    is_transmitting
 );
 
-/********************************************************************
-*port and variables
-********************************************************************/
     input                       SCLK;
     input                       MOSI;
     input                       SS;
     output                      MISO;
 
-    output [7:0] data_from_master;
-    input [7:0] data_to_master;
-    output receiveing;
-    output transmitting;
-    output reg dbg;
+    output reg [7:0]            i_data;
+    input [7:0]                 o_data;
+    output reg                  is_receiveing;
+    output reg                  is_transmitting;
+
+///////////////////////////////////////////////////////////////////////////
+// Internal Wires/Registers
 
     reg [5:0]                   rx_cnt                  =       0;
     reg [5:0]                   tx_cnt                  =       0;
     reg [`DATA_LENGTH-1:0]      mosi_shift_reg          =       0;
     reg [`DATA_LENGTH-1:0]      miso_shift_reg          =       0;
 
-    reg transmitting_f=1;
-    reg receiveing_f=0;
-    reg [7:0] datareg;
-    reg [7:0] rddata;
+//initial miso_shift_reg <= o_data;
 
-initial begin
-    miso_shift_reg = data_to_master;
-    //dbg <= 0;
-end
+///////////////////////////////////////////////////////////////////////////
+// Receive data 
 
-/*********************************************************************
-*receive data 
-*********************************************************************/
-
-always@(posedge SCLK )
+always@(posedge SCLK)
     if(SS)
         mosi_shift_reg <= 0;
     else if(!SS && (rx_cnt < `DATA_LENGTH))
@@ -61,55 +50,40 @@ always@(posedge SCLK )
 always@(posedge SCLK or posedge SS)
     if(SS) begin
         rx_cnt <= 0;
-        receiveing_f <= 0;
+        is_receiveing <= 0;
     end
     else if(rx_cnt == `DATA_LENGTH - 1) begin
-        //receiveing_f <= 0;
-        dbg <= ~dbg;
-        //rddata <= datareg;
-        //datareg <= mosi_shift_reg;
         rx_cnt <= 0;
     end
     else begin
-        receiveing_f <= 1;
+        is_receiveing <= 1;
         rx_cnt <= rx_cnt + 1;
     end
 
-always@(posedge SS)
-    begin
-        datareg <= mosi_shift_reg;
-        //receiveing_f <= 0;
-        //transmitting_f <= 0;
-        miso_shift_reg <= data_to_master;
-    end
+always @(posedge SS)
+    i_data <= mosi_shift_reg;
 
-assign receiveing = receiveing_f;
-assign data_from_master = datareg;
+///////////////////////////////////////////////////////////////////////////
+// Transmit data 
 
-/*******************************************************************
-*transmit data 
-*******************************************************************/
-
-always@(negedge SCLK )
+always@(negedge SCLK or posedge SS)
     if(SS) 
     begin
-        // transmitting_f <= 0;
         tx_cnt <= 0;
+        //miso_shift_reg <= o_data;
     end // передача начинается, когда tx_cnt = 0. Обновить данные нужно еще до этого момента.
     else if(tx_cnt >= `DATA_LENGTH - 1) // а заканчивается в этот момент
     begin
-        //miso_shift_reg <= mosi_shift_reg;
-        transmitting_f <= 0;
-        //miso_shift_reg <= data_to_master;
+        is_transmitting <= 0;
         tx_cnt <= 0;
     end
     else begin
-        transmitting_f <= 1;
+        is_transmitting <= 1;
         tx_cnt <= tx_cnt + 1;
     end
 
-assign MISO = SS ? 1'bz : miso_shift_reg[`DATA_LENGTH-tx_cnt-1] ;    //MSB -> LSB
-assign transmitting = transmitting_f;
+assign MISO = SS ? 1'bz : o_data[`DATA_LENGTH-tx_cnt-1] ;    //MSB -> LSB
+//assign MISO = SS ? 1'bz : miso_shift_reg[`DATA_LENGTH-tx_cnt-1] ;    //MSB -> LSB
 
 
 endmodule
