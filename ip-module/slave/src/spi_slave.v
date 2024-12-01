@@ -31,6 +31,7 @@ module spi_slave (
  reg                       clk_en=0; 
 
  reg                       transmit_rd=0;
+ reg                       receive_rd=0;
 
  reg [7:0] o_data = 8'b11111111;
  wire [7:0] i_data;
@@ -61,8 +62,16 @@ module spi_slave (
 //////////////////////////////////////////////////////////////////////////
 // Data management
 
-always @(negedge is_receiveing)
-    leds <= i_data;
+always @(posedge clk)
+    if (reset_on_1)
+        leds <= 0;
+    else if (!receive_rd && !is_receiveing)
+    begin
+        leds <= i_data;
+        receive_rd <= 1;
+    end
+    else if (is_receiveing)
+        receive_rd <= 0;
 
 always @(posedge clk)
     if (reset_on_1)
