@@ -118,7 +118,7 @@ always @(posedge clk)
     if (reset_on_1)
     begin
         o_data <= o_message[0];
-        o_index <= 0;
+        o_index <= 1;
     end
     // Data transmited and needs to be updated
     else if (!transmit_rd && !is_transmitting)
@@ -142,7 +142,8 @@ always @(posedge clk)
             i_message[i] <= 0;
           end
         i_index <=0; 
-
+        
+        receive_rd <= 1;
     end
     // Data received and ready for display
     else if (!receive_rd && !is_receiveing)
