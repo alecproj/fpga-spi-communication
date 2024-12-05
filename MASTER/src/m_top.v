@@ -177,7 +177,7 @@ always @(posedge clk)
           end
         i_index <=0; 
 
-        i_change_rd <= 1;
+        i_change_rd <= 0;
     end
     // Data received and ready for display
     else if (!is_sending && i_change_rd)

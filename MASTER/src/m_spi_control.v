@@ -97,7 +97,7 @@ begin
 		                        I_WDATA <= 8'h01;	 //Slave Select
 		
 		                        wr_cntl <=1;
-                                is_sending <= 0;
+                                is_sending <= 1;
 		                    end
 						   else
 						    begin
@@ -320,7 +320,7 @@ begin
 
 			                    wr_index <= 0;
 			                    wr_reg <= 0;
-                                is_sending <= 1;
+                                is_sending <= 0;
 		                    end
 						default:
 						    begin
