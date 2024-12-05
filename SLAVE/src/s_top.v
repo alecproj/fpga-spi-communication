@@ -51,6 +51,8 @@ module s_top
     reg  [5:0]                o_index=0;
     reg                       transmit_rd=0;
     reg                       receive_rd=0;
+    wire                      is_transmitting;
+    wire                      is_receiveing;
 
     
     // For display
@@ -119,17 +121,19 @@ always @(posedge clk)
     begin
         o_data <= o_message[0];
         o_index <= 1;
+
+        transmit_rd <= 0;
     end
     // Data transmited and needs to be updated
-    else if (!transmit_rd && !is_transmitting)
+    else if (!is_transmitting && transmit_rd)
     begin
         o_data <= o_message[o_index];
         o_index <= o_index + 1;
 
-        transmit_rd <= 1;
+        transmit_rd <= 0;
     end    
     else if (is_transmitting)
-        transmit_rd <= 0;
+        transmit_rd <= 1;
 
 ////////////////////////////////////////////////////////////////  
 // Input data management
@@ -143,10 +147,10 @@ always @(posedge clk)
           end
         i_index <=0; 
         
-        receive_rd <= 1;
+        receive_rd <= 0;
     end
     // Data received and ready for display
-    else if (!receive_rd && !is_receiveing)
+    else if (!is_receiveing && receive_rd)
     begin
         i_message[i_index] <= i_data;
         i_index <= i_index + 1;
@@ -159,10 +163,10 @@ always @(posedge clk)
           end
         end
 
-        receive_rd <= 1;
+        receive_rd <= 0;
     end
     else if (is_receiveing)
-        receive_rd <= 0;
+        receive_rd <= 1;
 
 ////////////////////////////////////////////////////////////////   
 // Preparation for display
