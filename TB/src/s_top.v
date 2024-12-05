@@ -80,12 +80,17 @@ module s_top
             i_message[i] = 0;
         end
 
-        o_message[0] = "S";
-        o_message[1] = "L";
-        o_message[2] = "A";
-        o_message[3] = "V";
-        o_message[4] = "E";
-        for (i=5; i<64; i=i+1) begin
+        o_message[0] = "F";
+        o_message[1] = "R";
+        o_message[2] = "O";
+        o_message[3] = "M";
+        o_message[4] = " ";
+        o_message[5] = "S";
+        o_message[6] = "L";
+        o_message[7] = "A";
+        o_message[8] = "V";
+        o_message[9] = "E";
+        for (i=10; i<64; i=i+1) begin
             o_message[i] = 0;
         end
     end
