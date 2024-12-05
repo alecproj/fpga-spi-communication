@@ -55,13 +55,6 @@ module m_top
 
     wire                      send;
     wire                      is_sending;
-
-  reg   start_f=0;
-  reg [1:0] delay=0;
-  reg delay_f=0;
-  wire start;
-  reg launch;
-  reg launched_f;
     
     // For buttons
     wire                      reset_on_1;
@@ -69,9 +62,14 @@ module m_top
     reg  [7:0]                delay_btn_reset=0;
     reg  [7:0]                delay_btn_send=0; 
     reg  [14:0]               counter0=0;
-    reg                       clk_en=0; 
+    reg                       clk_en=0;
+ 
+    wire                      start;
+    reg                       launch;
+    reg                       launched_f;
 
     // For data
+    reg                       start_f=0;
     reg  [7:0]                i_message [63:0];
     reg  [7:0]                o_message [63:0];
     reg  [7:0]                o_data=0;
@@ -106,13 +104,18 @@ module m_top
             i_message[i] = 0;
         end
 
-        o_message[0] = "M";
-        o_message[1] = "A";
-        o_message[2] = "S";
-        o_message[3] = "T";
-        o_message[4] = "E";
-        o_message[5] = "R";
-        for (i=6; i<64; i=i+1) begin
+        o_message[0] = "F";
+        o_message[1] = "R";
+        o_message[2] = "O";
+        o_message[3] = "M";
+        o_message[4] = " ";
+        o_message[5] = "M";
+        o_message[6] = "A";
+        o_message[7] = "S";
+        o_message[8] = "T";
+        o_message[9] = "E";
+        o_message[10] = "R";
+        for (i=11; i<64; i=i+1) begin
             o_message[i] = 0;
         end
     end
@@ -160,6 +163,7 @@ always @(posedge clk)
         launch <= 0;
         launched_f <= 0;
     end
+    // Single launch tact after pressing the start button
     else if (start && !launched_f)
     begin
         launch <= 1;
@@ -173,7 +177,7 @@ always @(posedge clk)
         launch <= 0;
 
 //////////////////////////////////////////////////////////////////////////
-// Output data preparation
+// Preparing data for sending via SPI
 
 always @(posedge clk)
     if(reset_on_1) 
@@ -195,7 +199,7 @@ always @(posedge clk)
         o_change_rd <= 1;
 
 ////////////////////////////////////////////////////////////////  
-// Input data management
+// Updating data received via SPI
 
 always @(posedge clk)
     
@@ -206,25 +210,8 @@ always @(posedge clk)
             i_message[i] <= 0;
           end
         i_index <=0; 
-
-        delay <= 0;
-        delay_f <= 0;
         start_f <= 0;
-
         i_change_rd <= 0;
-    end
-    else if (delay_f)
-    begin
-        if (clk_en == 1'b1)
-        begin
-            delay <= delay - 1;
-            if (delay == 1)
-            begin
-                delay <= 0;
-                start_f <= 1;
-                delay_f <= 0;
-            end
-        end
     end
     // Data received and ready for display
     else if (!is_sending && i_change_rd)
@@ -234,21 +221,21 @@ always @(posedge clk)
         
         if (!i_index)
         begin
-        for (i=1; i<64; i=i+1) 
-          begin
-            i_message[i] <= 0;
-          end
+            for (i=1; i<64; i=i+1) 
+              begin
+                i_message[i] <= 0;
+              end
         end
+    
+        if (i_index != 62)
+            start_f <= 1;
 
         i_change_rd <= 0;
-        if (i_index != 62)
-            /*delay_f <= 1;
-        else*/
-            start_f <= 1;
     end
     else if (is_sending) begin
-        i_change_rd <= 1;
         start_f <= 0;
+
+        i_change_rd <= 1;
     end
 
 assign send = |{launch, start_f};
@@ -256,7 +243,8 @@ assign send = |{launch, start_f};
 ////////////////////////////////////////////////////////////////   
 // Preparation for display
  
-    always @(posedge clk) begin
+    always @(posedge clk) 
+    begin
         outputBuffer <= fontBuffer[((chosenChar-8'd32) << 4) + (columnAddress << 1) + (topRow ? 0 : 1)];
     end
 
@@ -284,40 +272,39 @@ m_screen u_m_screen (
 );
 
  m_spi_control u_spi_control (
-    .I_CLK              ( clk         ),
-    .I_RESETN           ( reset_on_0  ),
-    .start              ( send       ),
-    .I_TX_EN            ( I_TX_EN     ),
-    .I_WADDR            ( I_WADDR     ),
-    .I_WDATA            ( I_WDATA     ),
-    .I_RX_EN            ( I_RX_EN     ),
-    .I_RADDR            ( I_RADDR     ),
-    .O_RDATA            ( O_RDATA     ),
-	.wr_index           ( wr_index    ),
-
-    .i_data             ( i_data      ),
-    .o_data             ( o_data      ),
-    .is_sending         ( is_sending  )
+    .I_CLK              ( clk          ),
+    .I_RESETN           ( reset_on_0   ),
+    .start              ( send         ),
+    .I_TX_EN            ( I_TX_EN      ),
+    .I_WADDR            ( I_WADDR      ),
+    .I_WDATA            ( I_WDATA      ),
+    .I_RX_EN            ( I_RX_EN      ),
+    .I_RADDR            ( I_RADDR      ),
+    .O_RDATA            ( O_RDATA      ),
+	.wr_index           ( wr_index     ),
+    .i_data             ( i_data       ),
+    .o_data             ( o_data       ),
+    .is_sending         ( is_sending   )
  );
 
  SPI_MASTER_Top u_spi_master (
-    .I_CLK              ( clk         ),
-    .I_RESETN           ( reset_on_0  ),
-    .I_TX_EN            ( I_TX_EN     ),
-    .I_WADDR            ( I_WADDR     ),
-    .I_WDATA            ( I_WDATA     ),
-    .I_RX_EN            ( I_RX_EN     ),
-    .I_RADDR            ( I_RADDR     ),
-    .O_RDATA            ( O_RDATA     ),
-    .O_SPI_INT          (             ),
-    .MISO_MASTER        ( MISO_MASTER ),
-    .MOSI_MASTER        ( MOSI_MASTER ),
-    .SS_N_MASTER        ( SS_N_MASTER ),
-    .SCLK_MASTER        ( SCLK_MASTER ),
-    .MISO_SLAVE         ( MISO_SLAVE  ),
-    .MOSI_SLAVE         ( MOSI_SLAVE  ),
-    .SS_N_SLAVE         ( SS_N_SLAVE  ),
-    .SCLK_SLAVE         ( SCLK_SLAVE  )
+    .I_CLK              ( clk          ),
+    .I_RESETN           ( reset_on_0   ),
+    .I_TX_EN            ( I_TX_EN      ),
+    .I_WADDR            ( I_WADDR      ),
+    .I_WDATA            ( I_WDATA      ),
+    .I_RX_EN            ( I_RX_EN      ),
+    .I_RADDR            ( I_RADDR      ),
+    .O_RDATA            ( O_RDATA      ),
+    .O_SPI_INT          (              ),
+    .MISO_MASTER        ( MISO_MASTER  ),
+    .MOSI_MASTER        ( MOSI_MASTER  ),
+    .SS_N_MASTER        ( SS_N_MASTER  ),
+    .SCLK_MASTER        ( SCLK_MASTER  ),
+    .MISO_SLAVE         ( MISO_SLAVE   ),
+    .MOSI_SLAVE         ( MOSI_SLAVE   ),
+    .SS_N_SLAVE         ( SS_N_SLAVE   ),
+    .SCLK_SLAVE         ( SCLK_SLAVE   )
  );
 
 endmodule

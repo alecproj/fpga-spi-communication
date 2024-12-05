@@ -8,11 +8,8 @@
         <File path="src/m_screen.v" type="file.verilog" enable="1"/>
         <File path="src/m_spi_control.v" type="file.verilog" enable="1"/>
         <File path="src/m_top.v" type="file.verilog" enable="1"/>
-        <File path="src/spi_master.v" type="file.verilog" enable="0"/>
         <File path="src/spi_master/spi_master.v" type="file.verilog" enable="1"/>
-        <File path="src/text.v" type="file.verilog" enable="0"/>
         <File path="src/master.cst" type="file.cst" enable="1"/>
-        <File path="src/screen_1k.cst" type="file.cst" enable="0"/>
         <File path="src/font.hex" type="file.other" enable="1"/>
     </FileList>
 </Project>
