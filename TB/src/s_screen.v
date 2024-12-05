@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-`define STARTUP_WAIT 32'd10000000
+`define STARTUP_WAIT 10
 
 module s_screen
 (
