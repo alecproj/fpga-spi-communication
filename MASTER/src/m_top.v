@@ -1,6 +1,7 @@
 `timescale 1ns/1ps
 
 `define STARTUP_WAIT 32'd10000000
+`define DATA_WIDTH 8
 
 module m_top
 (
@@ -52,8 +53,15 @@ module m_top
     wire                      SS_N_SLAVE;
     wire                      SCLK_SLAVE;
 
-    wire                      start;
+    wire                      send;
     wire                      is_sending;
+
+  reg   start_f=0;
+  reg [1:0] delay=0;
+  reg delay_f=0;
+  wire start;
+  reg launch;
+  reg launched_f;
     
     // For buttons
     wire                      reset_on_1;
@@ -144,6 +152,27 @@ module m_top
     end
 
 //////////////////////////////////////////////////////////////////////////
+// Launching
+
+always @(posedge clk)
+    if(reset_on_1) 
+    begin
+        launch <= 0;
+        launched_f <= 0;
+    end
+    else if (start && !launched_f)
+    begin
+        launch <= 1;
+        launched_f <= 1;
+    end
+    else if (!start)
+    begin
+        launched_f <= 0;
+    end
+    else if (launched_f)
+        launch <= 0;
+
+//////////////////////////////////////////////////////////////////////////
 // Output data preparation
 
 always @(posedge clk)
@@ -169,6 +198,7 @@ always @(posedge clk)
 // Input data management
 
 always @(posedge clk)
+    
     if(reset_on_1) 
     begin
         for (i=0; i<64; i=i+1) 
@@ -177,7 +207,24 @@ always @(posedge clk)
           end
         i_index <=0; 
 
+        delay <= 0;
+        delay_f <= 0;
+        start_f <= 0;
+
         i_change_rd <= 0;
+    end
+    else if (delay_f)
+    begin
+        if (clk_en == 1'b1)
+        begin
+            delay <= delay - 1;
+            if (delay == 1)
+            begin
+                delay <= 0;
+                start_f <= 1;
+                delay_f <= 0;
+            end
+        end
     end
     // Data received and ready for display
     else if (!is_sending && i_change_rd)
@@ -194,9 +241,17 @@ always @(posedge clk)
         end
 
         i_change_rd <= 0;
+        if (i_index != 62)
+            /*delay_f <= 1;
+        else*/
+            start_f <= 1;
     end
-    else if (is_sending)
+    else if (is_sending) begin
         i_change_rd <= 1;
+        start_f <= 0;
+    end
+
+assign send = |{launch, start_f};
 
 ////////////////////////////////////////////////////////////////   
 // Preparation for display
@@ -231,7 +286,7 @@ m_screen u_m_screen (
  m_spi_control u_spi_control (
     .I_CLK              ( clk         ),
     .I_RESETN           ( reset_on_0  ),
-    .start              ( start       ),
+    .start              ( send       ),
     .I_TX_EN            ( I_TX_EN     ),
     .I_WADDR            ( I_WADDR     ),
     .I_WDATA            ( I_WDATA     ),
