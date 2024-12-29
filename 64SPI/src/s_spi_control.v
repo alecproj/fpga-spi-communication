@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-`define     DATA_LENGTH         8
+`define     DATA_LENGTH         32
 
 module s_spi_control (
     SCLK,
@@ -19,8 +19,8 @@ module s_spi_control (
     input                       SS;
     output                      MISO;
 
-    output reg [7:0]            i_data;
-    input [7:0]                 o_data;
+    output reg [`DATA_LENGTH-1:0]            i_data;
+    input [`DATA_LENGTH-1:0]                 o_data;
     output reg                  is_receiveing;
     output reg                  is_transmitting;
 
@@ -31,8 +31,6 @@ module s_spi_control (
     reg [5:0]                   tx_cnt                  =       0;
     reg [`DATA_LENGTH-1:0]      mosi_shift_reg          =       0;
     reg [`DATA_LENGTH-1:0]      miso_shift_reg          =       0;
-
-//initial miso_shift_reg <= o_data;
 
 ///////////////////////////////////////////////////////////////////////////
 // Receive data 
@@ -69,10 +67,10 @@ always @(posedge SS)
 always@(negedge SCLK or posedge SS)
     if(SS) 
     begin
+        is_transmitting <= 0;
         tx_cnt <= 0;
-        //miso_shift_reg <= o_data;
-    end // передача начинается, когда tx_cnt = 0. Обновить данные нужно еще до этого момента.
-    else if(tx_cnt >= `DATA_LENGTH - 1) // а заканчивается в этот момент
+    end
+    else if(tx_cnt >= `DATA_LENGTH - 1)
     begin
         is_transmitting <= 0;
         tx_cnt <= 0;
@@ -83,7 +81,6 @@ always@(negedge SCLK or posedge SS)
     end
 
 assign MISO = SS ? 1'bz : o_data[`DATA_LENGTH-tx_cnt-1] ;    //MSB -> LSB
-//assign MISO = SS ? 1'bz : miso_shift_reg[`DATA_LENGTH-tx_cnt-1] ;    //MSB -> LSB
 
 
 endmodule
